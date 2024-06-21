@@ -1,0 +1,31 @@
+version: "3.8"
+
+services:
+  master:
+    image: postgres:latest
+    container_name: pg_master
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+
+  # slave:
+  #   image: postgres:latest
+  #   container_name: pg_slave
+  #   environment:
+  #     POSTGRES_USER: postgres
+  #     POSTGRES_PASSWORD: postgres
+  #   volumes:
+  #     - ./config/slave/postgresql.conf:/etc/postgresql/postgresql.conf
+  #     - ./config/slave/pg_hba.conf:/etc/postgresql/pg_hba.conf
+  #     - pg_slave_data:/var/lib/postgresql/data
+  #   depends_on:
+  #     - master
+  #   ports:
+  #     - "5433:5432"
+  #   command: bash -c "until pg_isready --host=master --username=postgres; do sleep 1; done && pg_basebackup -h master -D /var/lib/postgresql/data -U postgres -v -P --wal-method=stream && postgres -c config_file=/etc/postgresql/postgresql.conf"
+
+volumes:
+  pg_master_data:
+  pg_slave_data:

@@ -1,0 +1,43 @@
+syntax = "proto3";
+package card.v1;
+
+import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option go_package = "v1/card";
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "CARD API"
+    version: "1.0"
+    contact: {
+      name: "gRPC-Gateway project"
+      url: "https://github.com/grpc-ecosystem/grpc-gateway"
+      email: "none@example.com"
+    }
+  }
+};
+
+message StringMessage {
+  string letter = 1;
+  optional int64 created_at = 2;
+  string author = 3;
+}
+
+message RepeatedStringMessage {
+  repeated StringMessage value = 1;
+}
+
+message IDRequest {
+  int32 id = 1;
+}
+service YourService {
+  rpc CreateCard(StringMessage) returns (StringMessage) {
+    option (google.api.http) = {
+      post: "/v1/card"
+      body: "*"
+    };
+  }
+  rpc GetAllCard(IDRequest) returns (RepeatedStringMessage) {
+    option (google.api.http) = {get: "/v1/card"};
+  }
+}
