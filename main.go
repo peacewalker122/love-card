@@ -12,6 +12,7 @@ import (
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/jackc/pgx/v5"
+	"github.com/rs/cors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -66,7 +67,15 @@ func runGatewayServer(db db.DBTX) {
 	mux.Handle("/", LoggingMiddleware(grpcmux))
 
 	fs := http.FileServer(http.Dir("./gen/openapiv2/"))
-	mux.Handle("/swagger/", http.StripPrefix("/swagger/", fs))
+	mux.Handle("/swagger/", LoggingMiddleware(http.StripPrefix("/swagger/", fs)))
+
+	// Add CORS middleware
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"*"}, // Allow all origins
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"*"},
+		AllowCredentials: true,
+	})
 
 	listener, err := net.Listen("tcp", "127.0.0.1:8081")
 	if err != nil {
@@ -74,7 +83,7 @@ func runGatewayServer(db db.DBTX) {
 	}
 	log.Default().Println("http server started")
 
-	err = http.Serve(listener, mux)
+	err = http.Serve(listener, c.Handler(mux))
 	if err != nil {
 		log.Default().Fatalf("failed to serve: %v", err)
 	}

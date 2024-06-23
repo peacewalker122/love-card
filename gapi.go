@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"log"
 	"project/gen/go/card/v1"
 	project "project/src/database/gen"
 	"project/src/helper"
@@ -22,6 +23,7 @@ func NewServer(db project.DBTX) card.YourServiceServer {
 }
 
 func (s *Server) CreateCard(ctx context.Context, req *card.StringMessage) (*card.StringMessage, error) {
+	log.Println("INCOMINGGGG: ", req)
 	created_at := pgtype.Timestamptz{
 		Time: time.Now().UTC(),
 	}

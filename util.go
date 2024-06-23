@@ -1,8 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"time"
 
@@ -53,17 +55,45 @@ func GrpcLogger(
 func LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
+		logger := log.Info()
+
+		// Read and log the request body
+		var requestBody []byte
+
+		if r.Method == http.MethodPost {
+			if r.Body != nil {
+				requestBody, _ = io.ReadAll(io.Reader(r.Body))
+				r.Body = io.NopCloser(io.Reader(bytes.NewBuffer(requestBody)))
+				logger.RawJSON("request", requestBody)
+			}
+		}
 
 		// Create a ResponseWriter wrapper to capture the status code
-		wrappedWriter := &statusResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+		wrappedWriter := &statusResponseWriter{ResponseWriter: w, statusCode: http.StatusOK, Response: new(bytes.Buffer)}
 		next.ServeHTTP(wrappedWriter, r)
+
+		defer func() {
+			if err := recover(); err != nil {
+				duration := time.Since(startTime)
+				log.Error().
+					Str("protocol", "http").
+					Str("method", r.Method).
+					Str("url", r.URL.String()).
+					Int("status_code", http.StatusInternalServerError).
+					Bytes("response", wrappedWriter.Response.Bytes()).
+					Dur("duration", duration).
+					Msgf("panic recovered: %v", err)
+
+				http.Error(wrappedWriter, "Internal Server Error", http.StatusInternalServerError)
+			}
+		}()
 
 		duration := time.Since(startTime)
 		statusCode := wrappedWriter.statusCode
 
-		logger := log.Info()
 		if statusCode >= 400 {
-			logger = log.Error()
+			logger = log.Error().
+				RawJSON("response", wrappedWriter.Response.Bytes())
 		}
 
 		logger.
@@ -79,10 +109,17 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 // statusResponseWriter is a wrapper around http.ResponseWriter that captures the status code.
 type statusResponseWriter struct {
 	http.ResponseWriter
+	Response   *bytes.Buffer
 	statusCode int
 }
 
 func (w *statusResponseWriter) WriteHeader(statusCode int) {
 	w.statusCode = statusCode
 	w.ResponseWriter.WriteHeader(statusCode)
+}
+
+func (w *statusResponseWriter) Write(val []byte) (int, error) {
+	w.Response.Write(val)
+
+	return w.ResponseWriter.Write(val)
 }
