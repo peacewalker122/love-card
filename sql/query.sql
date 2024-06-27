@@ -4,4 +4,13 @@ VALUES ($1,$2,$3)
 RETURNING *;
 
 -- name: GetCard :many
-SELECT * FROM card;
+SELECT
+    card.letter,
+    card.author,
+    card.created_at
+FROM
+    card
+WHERE
+    card.searchable @@ to_tsquery('english',$1)
+    or
+    to_tsvector('english', author) @@ to_tsquery('english',$1);

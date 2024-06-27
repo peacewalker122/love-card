@@ -11,7 +11,7 @@ import (
 	db "project/src/database/gen"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rs/cors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -19,12 +19,12 @@ import (
 
 func main() {
 	urlExample := "postgres://postgres:postgres@localhost:5432/app"
-	database, err := pgx.Connect(context.Background(), urlExample)
+	database, err := pgxpool.New(context.Background(), urlExample)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
 	}
-	defer database.Close(context.Background())
+	defer database.Close()
 
 	go runGatewayServer(database)
 	runGRPCServer(database)
@@ -67,7 +67,7 @@ func runGatewayServer(db db.DBTX) {
 	mux.Handle("/", LoggingMiddleware(grpcmux))
 
 	fs := http.FileServer(http.Dir("./gen/openapiv2/"))
-	mux.Handle("/swagger/", LoggingMiddleware(http.StripPrefix("/swagger/", fs)))
+	mux.Handle("/swagger/", http.StripPrefix("/swagger/", fs))
 
 	// Add CORS middleware
 	c := cors.New(cors.Options{

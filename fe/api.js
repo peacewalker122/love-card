@@ -1,8 +1,15 @@
 const baseURL = "http://localhost:8081"; // Include the protocol
 
-export const getAllCards = async () => {
+export const getAllCards = async (value) => {
 	try {
-		const res = await fetch(`${baseURL}/v1/card`);
+		// Ensure value is a string
+		if (typeof value !== "string") {
+			throw new Error("The value parameter must be a string");
+		}
+
+		const res = await fetch(
+			`${baseURL}/v1/card?value=${encodeURIComponent(value)}`,
+		);
 
 		// Check if the response is successful
 		if (!res.ok) {

@@ -9,7 +9,8 @@ import (
 )
 
 type Card struct {
-	Letter    string
-	CreatedAt time.Time
-	Author    string
+	Letter     string
+	CreatedAt  time.Time
+	Author     string
+	Searchable interface{}
 }

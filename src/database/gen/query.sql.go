@@ -13,7 +13,7 @@ import (
 const createCard = `-- name: CreateCard :one
 INSERT INTO card (letter, created_at, author)
 VALUES ($1,$2,$3)
-RETURNING letter, created_at, author
+RETURNING letter, created_at, author, searchable
 `
 
 type CreateCardParams struct {
@@ -25,24 +25,44 @@ type CreateCardParams struct {
 func (q *Queries) CreateCard(ctx context.Context, arg CreateCardParams) (Card, error) {
 	row := q.db.QueryRow(ctx, createCard, arg.Letter, arg.CreatedAt, arg.Author)
 	var i Card
-	err := row.Scan(&i.Letter, &i.CreatedAt, &i.Author)
+	err := row.Scan(
+		&i.Letter,
+		&i.CreatedAt,
+		&i.Author,
+		&i.Searchable,
+	)
 	return i, err
 }
 
 const getCard = `-- name: GetCard :many
-SELECT letter, created_at, author FROM card
+SELECT
+    card.letter,
+    card.author,
+    card.created_at
+FROM
+    card
+WHERE
+    card.searchable @@ to_tsquery('english',$1)
+    or
+    to_tsvector('english', author) @@ to_tsquery('english',$1)
 `
 
-func (q *Queries) GetCard(ctx context.Context) ([]Card, error) {
-	rows, err := q.db.Query(ctx, getCard)
+type GetCardRow struct {
+	Letter    string
+	Author    string
+	CreatedAt time.Time
+}
+
+func (q *Queries) GetCard(ctx context.Context, toTsquery string) ([]GetCardRow, error) {
+	rows, err := q.db.Query(ctx, getCard, toTsquery)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Card
+	var items []GetCardRow
 	for rows.Next() {
-		var i Card
-		if err := rows.Scan(&i.Letter, &i.CreatedAt, &i.Author); err != nil {
+		var i GetCardRow
+		if err := rows.Scan(&i.Letter, &i.Author, &i.CreatedAt); err != nil {
 			return nil, err
 		}
 		items = append(items, i)

@@ -1,15 +1,16 @@
 import React, { useState } from "react";
 import { FaSearch } from "react-icons/fa";
 
-const SearchComponent = ({ onSearch }) => {
+const SearchButton = ({ onSearch, setList }) => {
 	const [searchString, setSearchString] = useState("");
 
 	const handleInputChange = (e) => {
 		setSearchString(e.target.value);
 	};
 
-	const handleSearchClick = () => {
-		onSearch(searchString);
+	const handleSearchClick = async () => {
+		const fetchedCards = await onSearch(searchString);
+		setList(fetchedCards);
 	};
 
 	return (
@@ -33,4 +34,4 @@ const SearchComponent = ({ onSearch }) => {
 	);
 };
 
-export default SearchComponent;
+export default SearchButton;

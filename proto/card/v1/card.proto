@@ -29,7 +29,9 @@ message RepeatedStringMessage {
 
 message IDRequest {
   int32 id = 1;
+  string value = 2;
 }
+
 service YourService {
   rpc CreateCard(StringMessage) returns (StringMessage) {
     option (google.api.http) = {
