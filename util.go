@@ -103,6 +103,10 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 			Int("status_code", statusCode).
 			Dur("duration", duration).
 			Msg("received an HTTP request")
+
+		RequestDuration.With(map[string]string{
+			"response_status": string(statusCode),
+		}).Observe(duration.Seconds())
 	})
 }
 
@@ -122,4 +126,14 @@ func (w *statusResponseWriter) Write(val []byte) (int, error) {
 	w.Response.Write(val)
 
 	return w.ResponseWriter.Write(val)
+}
+
+func PriorityString(str ...string) string {
+	for _, s := range str {
+		if s != "" {
+			return s
+		}
+	}
+
+	return ""
 }

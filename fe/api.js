@@ -2,14 +2,16 @@ const baseURL = "http://localhost:8081"; // Include the protocol
 
 export const getAllCards = async (value) => {
 	try {
-		// Ensure value is a string
-		if (typeof value !== "string") {
-			throw new Error("The value parameter must be a string");
+		var path = "";
+		if (value === "" || value === undefined) {
+			path = `${baseURL}/v1/card`;
+		} else {
+			path = `${baseURL}/v1/card?value=${encodeURIComponent(value)}`;
 		}
 
-		const res = await fetch(
-			`${baseURL}/v1/card?value=${encodeURIComponent(value)}`,
-		);
+		console.log("path: " + path);
+
+		const res = await fetch(path);
 
 		// Check if the response is successful
 		if (!res.ok) {

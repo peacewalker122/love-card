@@ -3,10 +3,17 @@ import AddCard from "./components/addCard";
 import SearchButton from "./components/search";
 import ListCard from "./components/listCard";
 import { getAllCards } from "../../api";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Home() {
 	const [cards, setCards] = useState([]);
+
+	// Fetch cards only once when the component mounts
+	useEffect(() => {
+		getAllCards().then((cards) => {
+			setCards(cards);
+		});
+	}, []); // The empty dependency array ensures this runs only once
 
 	return (
 		<body className="w-screen h-screen bg-indigo-500">

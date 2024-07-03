@@ -5,27 +5,49 @@ services:
     image: postgres:latest
     container_name: pg_master
     environment:
-      POSTGRES_USER: postgres
+      POSTGRES_USER: grafana
       POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
       - "5432:5432"
+    volumes:
+      - ./config/master/init:/docker-entrypoint-initdb.d
+      - ./config/master/data:/var/lib/postgresql/data
 
-  # slave:
-  #   image: postgres:latest
-  #   container_name: pg_slave
-  #   environment:
-  #     POSTGRES_USER: postgres
-  #     POSTGRES_PASSWORD: postgres
-  #   volumes:
-  #     - ./config/slave/postgresql.conf:/etc/postgresql/postgresql.conf
-  #     - ./config/slave/pg_hba.conf:/etc/postgresql/pg_hba.conf
-  #     - pg_slave_data:/var/lib/postgresql/data
-  #   depends_on:
-  #     - master
-  #   ports:
-  #     - "5433:5432"
-  #   command: bash -c "until pg_isready --host=master --username=postgres; do sleep 1; done && pg_basebackup -h master -D /var/lib/postgresql/data -U postgres -v -P --wal-method=stream && postgres -c config_file=/etc/postgresql/postgresql.conf"
+  postgres-exporter:
+    image: bitnami/postgres-exporter:0.15.0
+    links:
+        - master
+    environment:
+      DATA_SOURCE_NAME: postgresql://grafana:postgres@master:5432/grafana?sslmode=disable
 
-volumes:
-  pg_master_data:
-  pg_slave_data:
+  app:
+    build: .
+    container_name: app
+    ports:
+      - "8081:8081"
+      - "5001:5001"
+    depends_on:
+      - master
+    environment:
+      DB_URL: postgresql://postgres:postgres@localhost:5432/app?sslmode=disable
+    network_mode: host
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - 8879:9090
+    volumes:
+      - ./config/prometheus/data:/mnt/user/appdata/prometheus/data
+      - ./config/prometheus/prometheus.yml:/mnt/user/appdata/prometheus/etc/prometheus/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - 3000:3000
+    environment:
+      GF_DATABASE_TYPE: postgres
+      GF_DATABASE_HOST: master:5432
+      GF_DATABASE_NAME: grafana
+      GF_DATABASE_USER: postgres
+      GF_DATABASE_PASSWORD: postgres

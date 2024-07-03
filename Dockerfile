@@ -1,21 +1,27 @@
-FROM golang:1.21-alpine AS builder
+# Build Stage
+FROM golang:1.22 AS builder
 
+# Set the working directory inside the container
 WORKDIR /app
-COPY . ./
+
+# Copy go.mod and go.sum files
+COPY go.mod go.sum ./
+
+# Download dependencies
 RUN go mod download
-RUN go mod vendor
+
+# Copy the source code
+COPY . .
 
 # Build the application
 RUN go build -o main .
+RUN chmod +x ./main
 
-# Create the production image
-FROM alpine
-WORKDIR /app
-COPY --from=builder /app/main .
+# Production Stage
+FROM debian:bookworm
 
-EXPOSE 5002
+# Copy the binary from the build stage
+COPY --from=builder /app/main /main
 
-# Replace with your actual health check script
-HEALTHCHECK CMD ["/bin/sh", "-c", "echo -n 'OK'"]
-
-CMD ["/app/main"]
+# Run the binary
+CMD ["./main"]

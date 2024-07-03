@@ -38,7 +38,6 @@ const AddCard = () => {
 
 	const handleSubmit = async (e) => {
 		e.preventDefault();
-		const router = useRouter();
 		if (letter.length > 1000 || author.length > 20) {
 			setErrorMessage("Please adhere to the character limits.");
 		} else {
@@ -47,8 +46,6 @@ const AddCard = () => {
 				const result = await setCard(newCard);
 				console.log("Card added successfully:", result);
 				handleCloseModal();
-
-				router.reload();
 			} catch (error) {
 				setErrorMessage("Error adding card. Please try again.");
 				console.error("Error adding card:", error);
