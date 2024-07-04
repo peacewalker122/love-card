@@ -9,25 +9,25 @@ WITH search_results AS (
         card.letter,
         card.author,
         card.created_at,
-        to_tsvector('english', card.letter) || to_tsvector('english', card.author) AS document
+        card.searchable as document
     FROM
         card
 ),
-query AS (
-    SELECT
-        $1::text AS search_term
-),
-recommendations AS (
-    SELECT
-        letter,
-        author,
-        created_at
-    FROM
-        card
-    ORDER BY
-        created_at DESC
-    LIMIT 10
-)
+     query AS (
+         SELECT
+             'daniel' as search_term
+     ),
+     recommendations AS (
+         SELECT
+             letter,
+             author,
+             created_at
+         FROM
+             card
+         ORDER BY
+             created_at DESC
+         LIMIT 10
+     )
 SELECT
     sr.letter,
     sr.author,
@@ -36,7 +36,7 @@ FROM
     search_results sr, query q
 WHERE
     q.search_term IS NOT NULL AND q.search_term != ''
-    AND (sr.document @@ to_tsquery('english', q.search_term))
+  AND (to_tsvector('english', sr.document) @@ to_tsquery('english', q.search_term))
 
 UNION ALL
 
@@ -47,4 +47,5 @@ SELECT
 FROM
     recommendations rec, query q
 WHERE
-    q.search_term IS NULL OR q.search_term = '';
+    q.search_term IS NULL OR q.search_term = ''
+LIMIT 50;
